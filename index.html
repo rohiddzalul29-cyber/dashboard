@@ -1350,7 +1350,7 @@ Dekat Seri Tj., Kec. Tj. Batu, Kabupaten Ogan Ilir, Sumatera Selatan 30664</text
     </div>
 
     <script>
-      // =================== KONFIGURASI SUPABASE ===================
+            // =================== KONFIGURASI SUPABASE ===================
       const SUPABASE_URL = "https://eumouuwgmayjyagqxgti.supabase.co";
       const SUPABASE_ANON_KEY =
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1bW91dXdnbWF5anlhZ3F4Z3RpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MDkzNzAsImV4cCI6MjA4NTk4NTM3MH0.B9wihoEOoo2hCbAVbr1q446HUxdHrgFGtPhKRhfVVAQ";
@@ -1366,6 +1366,7 @@ Dekat Seri Tj., Kec. Tj. Batu, Kabupaten Ogan Ilir, Sumatera Selatan 30664</text
       let storeSettings = null;
       let menus = [];
       let currentEditingMenu = null;
+      let authListener = null; // Untuk menyimpan listener auth
 
       // =================== ELEMENT REFERENCES ===================
       // Mobile Elements
@@ -1623,34 +1624,145 @@ Dekat Seri Tj., Kec. Tj. Batu, Kabupaten Ogan Ilir, Sumatera Selatan 30664</text
         }
       }
 
-      // =================== AUTHENTICATION ===================
+      // =================== AUTHENTICATION FLOW YANG BENAR ===================
+      // FLOW YANG BENAR: getSession() → onAuthStateChange() → getUser()
+      
+      // 1. Pertama: Check session dengan getSession()
       async function checkAuth() {
+        console.log("🔍 Starting authentication check...");
+        
         try {
-          console.log("🔍 Checking authentication...");
-
-          const {
-            data: { user },
-            error,
-          } = await supabaseAdmin.auth.getUser();
-
-          if (error) {
-            console.error("❌ Auth check error:", error);
+          // Step 1: Check session terlebih dahulu (bukan user)
+          const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.getSession();
+          
+          if (sessionError) {
+            console.error("❌ Session check error:", sessionError);
+            showLogin(); // Langsung ke login kalau error
             return;
           }
-
-          if (user) {
-            console.log("✅ User is authenticated:", user.email);
-            currentUser = user;
-            userEmail.textContent = user.email;
-            showDashboard();
-            await loadDashboardData();
-          } else {
-            console.log("⚠️ No authenticated user found");
+          
+          if (!sessionData.session) {
+            console.log("⚠️ No session found");
             showLogin();
+            return;
           }
+          
+          console.log("✅ Session found, setting up auth listener...");
+          
+          // Step 2: Setup auth state change listener
+          setupAuthListener();
+          
+          // Step 3: Sekarang coba get user
+          await getUserData();
+          
         } catch (error) {
           console.error("❌ Error in checkAuth:", error);
           showLogin();
+        }
+      }
+      
+      // 2. Kedua: Setup listener untuk auth state changes
+      function setupAuthListener() {
+        console.log("👂 Setting up auth state change listener...");
+        
+        if (authListener) {
+          // Cleanup listener sebelumnya jika ada
+          authListener.subscription.unsubscribe();
+        }
+        
+        // Setup listener baru
+        authListener = supabaseAdmin.auth.onAuthStateChange(
+          async (event, session) => {
+            console.log(`🔁 Auth state changed: ${event}`);
+            
+            switch (event) {
+              case 'SIGNED_IN':
+                console.log("✅ User signed in");
+                await getUserData();
+                break;
+                
+              case 'SIGNED_OUT':
+                console.log("🚪 User signed out");
+                showLogin();
+                break;
+                
+              case 'TOKEN_REFRESHED':
+                console.log("🔄 Token refreshed");
+                break;
+                
+              case 'USER_UPDATED':
+                console.log("📝 User updated");
+                await getUserData();
+                break;
+            }
+          }
+        );
+      }
+      
+      // 3. Ketiga: Get user data setelah session confirmed
+      async function getUserData() {
+        try {
+          console.log("👤 Getting user data...");
+          
+          // Tunggu sebentar untuk memastikan session stabil
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          const { data: userData, error } = await supabaseAdmin.auth.getUser();
+          
+          if (error) {
+            console.error("❌ Error getting user:", error);
+            
+            // Handle AuthSessionMissingError
+            if (error.message.includes('Auth session missing')) {
+              console.log("🔄 Session missing, trying to get session first...");
+              
+              // Coba get session dulu
+              const { data: sessionData } = await supabaseAdmin.auth.getSession();
+              if (sessionData.session) {
+                // Session ada, coba getUser lagi
+                await getUserData();
+              } else {
+                showLogin();
+              }
+              return;
+            }
+            
+            throw error;
+          }
+          
+          if (!userData.user) {
+            console.log("❌ No user found");
+            showLogin();
+            return;
+          }
+
+          console.log("✅ User authenticated:", userData.user.email);
+          currentUser = userData.user;
+          
+          // Update UI
+          userEmail.textContent = userData.user.email;
+          showDashboard();
+          
+          // Load dashboard data
+          await loadDashboardData();
+
+        } catch (error) {
+          console.error("❌ Error in getUserData:", error);
+          
+          // Jangan langsung redirect, coba lagi setelah delay
+          setTimeout(async () => {
+            try {
+              const { data: sessionData } = await supabaseAdmin.auth.getSession();
+              if (sessionData.session) {
+                await getUserData(); // Coba lagi
+              } else {
+                showLogin();
+              }
+            } catch (retryError) {
+              console.error("❌ Retry failed:", retryError);
+              showLogin();
+            }
+          }, 1000);
         }
       }
 
@@ -1672,6 +1784,10 @@ Dekat Seri Tj., Kec. Tj. Batu, Kabupaten Ogan Ilir, Sumatera Selatan 30664</text
           }
 
           console.log("✅ Login successful:", data.user.email);
+          
+          // Beri waktu untuk session tersimpan
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           currentUser = data.user;
           userEmail.textContent = data.user.email;
           showDashboard();
@@ -1691,6 +1807,12 @@ Dekat Seri Tj., Kec. Tj. Batu, Kabupaten Ogan Ilir, Sumatera Selatan 30664</text
           await supabaseAdmin.auth.signOut();
           currentUser = null;
           showLogin();
+          
+          // Cleanup listener
+          if (authListener) {
+            authListener.subscription.unsubscribe();
+            authListener = null;
+          }
         } catch (error) {
           console.error("❌ Logout error:", error);
         }
@@ -1704,6 +1826,12 @@ Dekat Seri Tj., Kec. Tj. Batu, Kabupaten Ogan Ilir, Sumatera Selatan 30664</text
         if (emailInput) emailInput.value = "";
         if (passwordInput) passwordInput.value = "";
         if (loginAlert) loginAlert.style.display = "none";
+        
+        // Cleanup listener jika ada
+        if (authListener) {
+          authListener.subscription.unsubscribe();
+          authListener = null;
+        }
       }
 
       function showDashboard() {
