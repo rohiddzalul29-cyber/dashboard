@@ -1,0 +1,2227 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard - Warung Habibie</title>
+
+    <!-- Supabase SDK -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* RESET & BASE STYLES */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f8f9fa;
+        color: #333;
+        min-height: 100vh;
+      }
+
+      /* LOGIN PAGE */
+      .login-page {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+        padding: 20px;
+      }
+
+      .login-container {
+        width: 100%;
+        max-width: 400px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+      }
+
+      .login-header {
+        background: #0f0f0f;
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .login-header h1 {
+        font-size: 1.8rem;
+        margin-bottom: 10px;
+      }
+
+      .login-header p {
+        opacity: 0.8;
+        font-size: 0.9rem;
+      }
+
+      .login-form {
+        padding: 30px;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #555;
+      }
+
+      .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border 0.3s;
+      }
+
+      .form-control:focus {
+        outline: none;
+        border-color: #ff6b35;
+      }
+
+      .login-btn {
+        width: 100%;
+        padding: 14px;
+        background: #ff6b35;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s;
+        margin-top: 10px;
+      }
+
+      .login-btn:hover {
+        background: #ff8c42;
+      }
+
+      .login-btn:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+      }
+
+      .alert {
+        padding: 12px 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+        display: none;
+      }
+
+      .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+
+      .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      /* DASHBOARD PAGE */
+      .dashboard-page {
+        display: none;
+      }
+
+      /* MOBILE MENU BUTTON */
+      .mobile-menu-btn {
+        display: none;
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        z-index: 999;
+        background: #ff6b35;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 10px;
+        font-size: 1.2rem;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .mobile-menu-btn:hover {
+        background: #ff8c42;
+      }
+
+      /* SIDEBAR */
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 250px;
+        height: 100vh;
+        background: #0f0f0f;
+        color: white;
+        padding: 20px 0;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+        z-index: 1000;
+      }
+
+      .sidebar.mobile-open {
+        transform: translateX(0);
+      }
+
+      .logo {
+        padding: 0 20px 30px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 20px;
+      }
+
+      .logo h2 {
+        color: #ff6b35;
+        font-size: 1.5rem;
+      }
+
+      .nav-menu {
+        list-style: none;
+        padding: 0 20px;
+      }
+
+      .nav-menu li {
+        margin-bottom: 5px;
+      }
+
+      .nav-menu a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 15px;
+        color: #cccccc;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.3s;
+      }
+
+      .nav-menu a:hover {
+        background: rgba(255, 107, 53, 0.1);
+        color: white;
+      }
+
+      .nav-menu a.active {
+        background: rgba(255, 107, 53, 0.2);
+        color: #ff6b35;
+      }
+
+      .nav-menu i {
+        width: 20px;
+        text-align: center;
+      }
+
+      .user-info {
+        position: absolute;
+        bottom: 20px;
+        left: 0;
+        right: 0;
+        padding: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .user-info p {
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
+
+      .logout-btn {
+        width: 100%;
+        padding: 10px;
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+        border: 1px solid rgba(244, 67, 54, 0.3);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .logout-btn:hover {
+        background: rgba(244, 67, 54, 0.3);
+      }
+
+      /* MAIN CONTENT */
+      .main-content {
+        margin-left: 250px;
+        padding: 20px;
+        min-height: 100vh;
+        transition: margin-left 0.3s ease;
+      }
+
+      .header {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      }
+
+      .header h1 {
+        color: #333;
+        font-size: 1.8rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      /* CARDS */
+      .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .card {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      }
+
+      .card h2 {
+        font-size: 1.3rem;
+        margin-bottom: 20px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .card h2 i {
+        color: #ff6b35;
+      }
+
+      /* STORE STATUS CARD */
+      .status-display {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 25px;
+      }
+
+      .status-indicator {
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .status-open {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .status-closed {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .toggle-btn {
+        padding: 10px 20px;
+        background: #ff6b35;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.3s;
+      }
+
+      .toggle-btn:hover {
+        background: #ff8c42;
+      }
+
+      .toggle-btn:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+      }
+
+      /* TIME CONTROLS */
+      .time-controls {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+      }
+
+      .time-controls input {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.9rem;
+      }
+
+      .time-controls button {
+        padding: 10px 20px;
+        background: #2196f3;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .time-controls button:hover {
+        background: #0b7dda;
+      }
+
+      /* MENU TABLE */
+      .table-container {
+        overflow-x: auto;
+        margin-top: 20px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        min-width: 600px;
+      }
+
+      th {
+        background: #f8f9fa;
+        padding: 12px 15px;
+        text-align: left;
+        font-weight: 600;
+        color: #555;
+        border-bottom: 2px solid #eee;
+      }
+
+      td {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+      }
+
+      tr:hover {
+        background: #f8f9fa;
+      }
+
+      .stock-badge {
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+
+      .stock-low {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .stock-ok {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .stock-out {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 8px;
+      }
+
+      .btn-edit,
+      .btn-delete {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: opacity 0.3s;
+      }
+
+      .btn-edit {
+        background: #ffc107;
+        color: #333;
+      }
+
+      .btn-delete {
+        background: #f44336;
+        color: white;
+      }
+
+      .btn-edit:hover,
+      .btn-delete:hover {
+        opacity: 0.9;
+      }
+
+      /* ADD MENU FORM */
+      .add-menu-form {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 10px;
+        margin-top: 20px;
+      }
+
+      .add-menu-form h3 {
+        margin-bottom: 20px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+      }
+
+      .form-actions {
+        margin-top: 20px;
+        text-align: right;
+      }
+
+      .btn-submit {
+        padding: 12px 30px;
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+      }
+
+      .btn-submit:hover {
+        background: #45a049;
+      }
+
+      /* FILE UPLOAD STYLING */
+      .file-upload-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .file-upload-btn {
+        padding: 10px 20px;
+        background: #2196f3;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: background 0.3s;
+        width: 100%;
+      }
+
+      .file-upload-btn:hover {
+        background: #0b7dda;
+      }
+
+      .file-upload-btn:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+      }
+
+      .upload-progress {
+        margin-top: 10px;
+        background: #f0f0f0;
+        border-radius: 10px;
+        overflow: hidden;
+        height: 20px;
+        display: none;
+      }
+
+      .progress-bar {
+        height: 100%;
+        background: #4caf50;
+        width: 0%;
+        transition: width 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.8rem;
+      }
+
+      #fileName {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 5px;
+      }
+
+      #imagePreview {
+        margin-top: 10px;
+      }
+
+      #previewImage {
+        max-width: 150px;
+        max-height: 150px;
+        border-radius: 5px;
+        border: 2px solid #eee;
+      }
+
+      .image-options {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .image-option-separator {
+        text-align: center;
+        color: #666;
+        font-size: 0.9rem;
+        margin: 10px 0;
+        position: relative;
+      }
+
+      .image-option-separator::before,
+      .image-option-separator::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        width: 45%;
+        height: 1px;
+        background: #ddd;
+      }
+
+      .image-option-separator::before {
+        left: 0;
+      }
+
+      .image-option-separator::after {
+        right: 0;
+      }
+
+      /* MODAL */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1100;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .modal.show {
+        display: flex;
+      }
+
+      .modal-content {
+        background: white;
+        border-radius: 10px;
+        width: 100%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      .modal-header {
+        padding: 20px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .modal-body {
+        padding: 20px;
+      }
+
+      .modal-footer {
+        padding: 20px;
+        border-top: 1px solid #eee;
+        text-align: right;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      .btn-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #999;
+      }
+
+      /* LOADING */
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+      }
+
+      .loading i {
+        font-size: 2rem;
+        margin-bottom: 10px;
+        color: #ff6b35;
+      }
+
+      /* RESPONSIVE */
+      @media (max-width: 1024px) {
+        .sidebar {
+          transform: translateX(-100%);
+        }
+
+        .main-content {
+          margin-left: 0;
+          padding: 70px 15px 15px 15px;
+        }
+
+        .mobile-menu-btn {
+          display: block;
+        }
+
+        .header {
+          margin-top: 10px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .cards-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .header {
+          padding: 15px;
+        }
+
+        .header h1 {
+          font-size: 1.5rem;
+        }
+
+        .card {
+          padding: 20px;
+        }
+
+        .card h2 {
+          font-size: 1.2rem;
+        }
+
+        .status-display {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
+
+        .action-buttons {
+          flex-direction: column;
+          width: 100%;
+        }
+
+        .btn-edit,
+        .btn-delete {
+          width: 100%;
+          text-align: center;
+        }
+
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .modal-content {
+          width: 95%;
+          max-height: 85vh;
+        }
+
+        .form-actions {
+          text-align: center;
+        }
+
+        .btn-submit {
+          width: 100%;
+        }
+
+        .mobile-menu-btn {
+          top: 10px;
+          left: 10px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .login-container {
+          max-width: 100%;
+          margin: 0 10px;
+        }
+
+        .login-header {
+          padding: 20px;
+        }
+
+        .login-header h1 {
+          font-size: 1.5rem;
+        }
+
+        .login-form {
+          padding: 20px;
+        }
+
+        .modal-footer {
+          flex-direction: column;
+        }
+
+        .modal-footer button {
+          width: 100%;
+        }
+
+        .table-container {
+          margin-left: -15px;
+          margin-right: -15px;
+          width: calc(100% + 30px);
+        }
+
+        table {
+          min-width: 800px;
+        }
+
+        .add-menu-form {
+          padding: 15px;
+        }
+
+        .file-upload-btn {
+          padding: 12px;
+          font-size: 0.85rem;
+        }
+      }
+
+      @media (max-width: 360px) {
+        .mobile-menu-btn {
+          padding: 8px;
+          font-size: 1rem;
+        }
+
+        .main-content {
+          padding: 60px 10px 10px 10px;
+        }
+
+        .card {
+          padding: 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- MOBILE MENU BUTTON -->
+    <button id="mobileMenuBtn" class="mobile-menu-btn">
+      <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- LOGIN PAGE -->
+    <div id="loginPage" class="login-page">
+      <div class="login-container">
+        <div class="login-header">
+          <h1><i class="fas fa-lock"></i> Admin Dashboard</h1>
+          <p>Warung Habibie - Management System</p>
+        </div>
+
+        <div class="login-form">
+          <div id="loginAlert" class="alert" style="display: none"></div>
+
+          <form id="loginForm" autocomplete="off">
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input
+                type="email"
+                id="email"
+                class="form-control"
+                autocomplete="username"
+                placeholder="admin@warunghabibie.com"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input
+                type="password"
+                id="password"
+                class="form-control"
+                autocomplete="current-password"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+
+            <button type="submit" id="loginBtn" class="login-btn">
+              <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div id="dashboardPage" class="dashboard-page">
+      <!-- SIDEBAR -->
+      <div class="sidebar" id="sidebar">
+        <div class="logo">
+          <h2><i class="fas fa-store"></i> Warung Habibie</h2>
+        </div>
+
+        <ul class="nav-menu">
+          <li>
+            <a href="#" class="active" data-page="dashboard">
+              <i class="fas fa-tachometer-alt"></i>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" data-page="store">
+              <i class="fas fa-cog"></i>
+              <span>Pengaturan Toko</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" data-page="menus">
+              <i class="fas fa-utensils"></i>
+              <span>Kelola Menu</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" data-page="orders">
+              <i class="fas fa-shopping-cart"></i>
+              <span>Pesanan</span>
+            </a>
+          </li>
+        </ul>
+
+        <div class="user-info">
+          <p id="userEmail">admin@warunghabibie.com</p>
+          <button id="logoutBtn" class="logout-btn">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
+        </div>
+      </div>
+
+      <!-- MAIN CONTENT -->
+      <div class="main-content">
+        <!-- DASHBOARD PAGE -->
+        <div id="pageDashboard" class="page" style="display: block">
+          <div class="header">
+            <h1><i class="fas fa-tachometer-alt"></i> Dashboard Overview</h1>
+          </div>
+
+          <div id="dashboardAlert" class="alert" style="display: none"></div>
+
+          <div class="cards-grid">
+            <!-- Store Status Card -->
+            <div class="card">
+              <h2><i class="fas fa-store"></i> Status Toko</h2>
+              <div class="status-display">
+                <div id="currentStatus" class="status-indicator status-open">
+                  BUKA
+                </div>
+                <button id="toggleStatusBtn" class="toggle-btn">
+                  Tutup Toko
+                </button>
+              </div>
+              <div class="form-group">
+                <label>Mode Operasi</label>
+                <select id="operationMode" class="form-control">
+                  <option value="auto">Otomatis (Ikuti Jam)</option>
+                  <option value="manual">Manual</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Store Hours Card -->
+            <div class="card">
+              <h2><i class="fas fa-clock"></i> Jam Operasional</h2>
+              <div class="form-group">
+                <label>Buka</label>
+                <input
+                  type="time"
+                  id="openTime"
+                  value="08:00"
+                  class="form-control"
+                />
+              </div>
+              <div class="form-group">
+                <label>Tutup</label>
+                <input
+                  type="time"
+                  id="closeTime"
+                  value="17:00"
+                  class="form-control"
+                />
+              </div>
+              <button id="saveHoursBtn" class="toggle-btn" style="width: 100%">
+                <i class="fas fa-save"></i> Simpan Jam
+              </button>
+            </div>
+
+            <!-- Stats Card -->
+            <div class="card">
+              <h2><i class="fas fa-chart-bar"></i> Statistik</h2>
+              <div style="text-align: center; padding: 20px 0">
+                <div
+                  style="font-size: 2.5rem; color: #ff6b35; font-weight: bold"
+                  id="totalMenus"
+                >
+                  0
+                </div>
+                <div style="color: #666; margin-top: 5px">Total Menu</div>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-around;
+                  margin-top: 20px;
+                "
+              >
+                <div style="text-align: center">
+                  <div
+                    style="font-size: 1.5rem; color: #4caf50; font-weight: bold"
+                    id="activeMenus"
+                  >
+                    0
+                  </div>
+                  <div style="font-size: 0.9rem; color: #666">Aktif</div>
+                </div>
+                <div style="text-align: center">
+                  <div
+                    style="font-size: 1.5rem; color: #f44336; font-weight: bold"
+                    id="outOfStock"
+                  >
+                    0
+                  </div>
+                  <div style="font-size: 0.9rem; color: #666">Habis</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MENUS PAGE -->
+        <div id="pageMenus" class="page" style="display: none">
+          <div class="header">
+            <h1><i class="fas fa-utensils"></i> Kelola Menu</h1>
+          </div>
+
+          <div class="card">
+            <h2><i class="fas fa-list"></i> Daftar Menu</h2>
+
+            <div id="menusAlert" class="alert" style="display: none"></div>
+
+            <div class="table-container">
+              <table id="menusTable">
+                <thead>
+                  <tr>
+                    <th>Nama</th>
+                    <th>Kategori</th>
+                    <th>Harga</th>
+                    <th>Stok</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="menusTableBody">
+                  <tr>
+                    <td colspan="6" class="loading">
+                      <i class="fas fa-spinner fa-spin"></i><br />
+                      Loading menu...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Add Menu Form -->
+            <div class="add-menu-form">
+              <h3><i class="fas fa-plus-circle"></i> Tambah Menu Baru</h3>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Nama Menu</label>
+                  <input
+                    type="text"
+                    id="menuName"
+                    class="form-control"
+                    placeholder="Nasi Goreng Seafood"
+                    required
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>Kategori</label>
+                  <select id="menuCategory" class="form-control" required>
+                    <option value="seblak">Seblak</option>
+                    <option value="gorengan">Gorengan</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Harga (Rp)</label>
+                  <input
+                    type="number"
+                    id="menuPrice"
+                    class="form-control"
+                    placeholder="15000"
+                    min="0"
+                    required
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>Stok</label>
+                  <input
+                    type="number"
+                    id="menuStock"
+                    class="form-control"
+                    placeholder="50"
+                    min="0"
+                    required
+                  />
+                </div>
+
+                <!-- Gambar Menu - Upload File -->
+                <div class="form-group">
+                  <label>Gambar Menu</label>
+                  <div class="image-options">
+                    <div class="file-upload-container">
+                      <button
+                        type="button"
+                        id="chooseFileBtn"
+                        class="file-upload-btn"
+                      >
+                        <i class="fas fa-cloud-upload-alt"></i> Upload Gambar
+                      </button>
+                      <input
+                        type="file"
+                        id="menuImageFile"
+                        accept="image/*"
+                        style="display: none"
+                      />
+                      <div id="fileName">Belum ada file dipilih</div>
+                      <div class="upload-progress" id="uploadProgress">
+                        <div class="progress-bar" id="progressBar">0%</div>
+                      </div>
+                      <div id="imagePreview" style="display: none">
+                        <img id="previewImage" />
+                      </div>
+                    </div>
+
+                    <div class="image-option-separator">atau</div>
+
+                    <div>
+                      <label>Gunakan URL Gambar</label>
+                      <input
+                        type="text"
+                        id="menuImageUrl"
+                        class="form-control"
+                        placeholder="https://example.com/image.jpg"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button id="addMenuBtn" class="btn-submit">
+                  <i class="fas fa-plus"></i> Tambah Menu
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STORE SETTINGS PAGE -->
+        <div id="pageStore" class="page" style="display: none">
+          <div class="header">
+            <h1><i class="fas fa-cog"></i> Pengaturan Toko</h1>
+          </div>
+
+          <div class="card">
+            <h2><i class="fas fa-info-circle"></i> Informasi Toko</h2>
+            <div id="storeAlert" class="alert" style="display: none"></div>
+
+            <div class="form-group">
+              <label>Nama Toko</label>
+              <input
+                type="text"
+                id="storeName"
+                value="Warung Habibie"
+                class="form-control"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Deskripsi</label>
+              <textarea id="storeDescription" rows="3" class="form-control">
+Hangatnya seblak di setiap malammu. Pesan via WhatsApp, kami antar ke lokasimu.</textarea
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Nomor WhatsApp</label>
+              <input
+                type="text"
+                id="storeWhatsApp"
+                value="082382733648"
+                class="form-control"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Alamat</label>
+              <textarea id="storeAddress" rows="2" class="form-control">
+Dekat Seri Tj., Kec. Tj. Batu, Kabupaten Ogan Ilir, Sumatera Selatan 30664</textarea
+              >
+            </div>
+
+            <button id="saveStoreInfoBtn" class="toggle-btn">
+              <i class="fas fa-save"></i> Simpan Informasi
+            </button>
+          </div>
+        </div>
+
+        <!-- ORDERS PAGE (Placeholder) -->
+        <div id="pageOrders" class="page" style="display: none">
+          <div class="header">
+            <h1><i class="fas fa-shopping-cart"></i> Manajemen Pesanan</h1>
+          </div>
+
+          <div class="card">
+            <h2><i class="fas fa-clipboard-list"></i> Daftar Pesanan</h2>
+            <p style="color: #666; margin-top: 10px">
+              Fitur ini akan segera hadir. Saat ini semua pesanan langsung ke
+              WhatsApp.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EDIT MENU MODAL -->
+    <div id="editMenuModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3><i class="fas fa-edit"></i> Edit Menu</h3>
+          <button class="btn-close" id="closeEditModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="editMenuForm">
+            <input type="hidden" id="editMenuId" />
+
+            <div class="form-group">
+              <label>Nama Menu</label>
+              <input
+                type="text"
+                id="editMenuName"
+                class="form-control"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Kategori</label>
+              <select id="editMenuCategory" class="form-control" required>
+                <option value="seblak">Seblak</option>
+                <option value="gorengan">Gorengan</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Harga (Rp)</label>
+              <input
+                type="number"
+                id="editMenuPrice"
+                class="form-control"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Stok</label>
+              <input
+                type="number"
+                id="editMenuStock"
+                class="form-control"
+                required
+              />
+            </div>
+
+            <!-- Gambar Menu Edit - Upload File -->
+            <div class="form-group">
+              <label>Gambar Menu</label>
+              <div class="image-options">
+                <div class="file-upload-container">
+                  <button
+                    type="button"
+                    id="editChooseFileBtn"
+                    class="file-upload-btn"
+                  >
+                    <i class="fas fa-cloud-upload-alt"></i> Upload Gambar Baru
+                  </button>
+                  <input
+                    type="file"
+                    id="editMenuImageFile"
+                    accept="image/*"
+                    style="display: none"
+                  />
+                  <div id="editFileName">Pilih file untuk mengganti gambar</div>
+                  <div class="upload-progress" id="editUploadProgress">
+                    <div class="progress-bar" id="editProgressBar">0%</div>
+                  </div>
+                  <div id="editImagePreview" style="display: none">
+                    <img id="editPreviewImage" />
+                  </div>
+                </div>
+
+                <div class="image-option-separator">atau</div>
+
+                <div>
+                  <label>Gunakan URL Gambar</label>
+                  <input
+                    type="text"
+                    id="editMenuImageUrl"
+                    class="form-control"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                  <div
+                    id="currentImagePreview"
+                    style="margin-top: 10px; display: none"
+                  >
+                    <small>Gambar Saat Ini:</small><br />
+                    <img
+                      id="currentImage"
+                      style="
+                        max-width: 150px;
+                        max-height: 150px;
+                        border-radius: 5px;
+                        margin-top: 5px;
+                      "
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Status</label>
+              <select id="editMenuStatus" class="form-control">
+                <option value="true">Aktif</option>
+                <option value="false">Nonaktif</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button
+            id="cancelEditBtn"
+            class="toggle-btn"
+            style="background: #666"
+          >
+            Batal
+          </button>
+          <button id="saveEditBtn" class="toggle-btn">Simpan Perubahan</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // =================== KONFIGURASI SUPABASE ===================
+      const SUPABASE_URL = "https://eumouuwgmayjyagqxgti.supabase.co";
+      const SUPABASE_ANON_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1bW91dXdnbWF5anlhZ3F4Z3RpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MDkzNzAsImV4cCI6MjA4NTk4NTM3MH0.B9wihoEOoo2hCbAVbr1q446HUxdHrgFGtPhKRhfVVAQ";
+
+      // =================== INISIALISASI SUPABASE ===================
+      const supabaseAdmin = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+      );
+
+      // =================== VARIABEL GLOBAL ===================
+      let currentUser = null;
+      let storeSettings = null;
+      let menus = [];
+      let currentEditingMenu = null;
+
+      // =================== ELEMENT REFERENCES ===================
+      // Mobile Elements
+      const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+      const sidebar = document.getElementById("sidebar");
+
+      // Login Elements
+      const loginPage = document.getElementById("loginPage");
+      const dashboardPage = document.getElementById("dashboardPage");
+      const loginForm = document.getElementById("loginForm");
+      const loginBtn = document.getElementById("loginBtn");
+      const emailInput = document.getElementById("email");
+      const passwordInput = document.getElementById("password");
+      const loginAlert = document.getElementById("loginAlert");
+
+      // Dashboard Elements
+      const logoutBtn = document.getElementById("logoutBtn");
+      const userEmail = document.getElementById("userEmail");
+      const dashboardAlert = document.getElementById("dashboardAlert");
+
+      // Store Status Elements
+      const currentStatus = document.getElementById("currentStatus");
+      const toggleStatusBtn = document.getElementById("toggleStatusBtn");
+      const operationMode = document.getElementById("operationMode");
+      const openTime = document.getElementById("openTime");
+      const closeTime = document.getElementById("closeTime");
+      const saveHoursBtn = document.getElementById("saveHoursBtn");
+
+      // Menu Elements
+      const menusTableBody = document.getElementById("menusTableBody");
+      const addMenuBtn = document.getElementById("addMenuBtn");
+      const menuName = document.getElementById("menuName");
+      const menuCategory = document.getElementById("menuCategory");
+      const menuPrice = document.getElementById("menuPrice");
+      const menuStock = document.getElementById("menuStock");
+      const menuImageUrl = document.getElementById("menuImageUrl");
+      const menusAlert = document.getElementById("menusAlert");
+
+      // File Upload Elements (Add Menu)
+      const menuImageFile = document.getElementById("menuImageFile");
+      const chooseFileBtn = document.getElementById("chooseFileBtn");
+      const fileName = document.getElementById("fileName");
+      const imagePreview = document.getElementById("imagePreview");
+      const previewImage = document.getElementById("previewImage");
+      const uploadProgress = document.getElementById("uploadProgress");
+      const progressBar = document.getElementById("progressBar");
+
+      // File Upload Elements (Edit Menu)
+      const editMenuImageFile = document.getElementById("editMenuImageFile");
+      const editChooseFileBtn = document.getElementById("editChooseFileBtn");
+      const editFileName = document.getElementById("editFileName");
+      const editImagePreview = document.getElementById("editImagePreview");
+      const editPreviewImage = document.getElementById("editPreviewImage");
+      const editUploadProgress = document.getElementById("editUploadProgress");
+      const editProgressBar = document.getElementById("editProgressBar");
+      const editMenuImageUrl = document.getElementById("editMenuImageUrl");
+      const currentImagePreview = document.getElementById(
+        "currentImagePreview",
+      );
+      const currentImage = document.getElementById("currentImage");
+
+      // Stats Elements
+      const totalMenus = document.getElementById("totalMenus");
+      const activeMenus = document.getElementById("activeMenus");
+      const outOfStock = document.getElementById("outOfStock");
+
+      // Store Info Elements
+      const saveStoreInfoBtn = document.getElementById("saveStoreInfoBtn");
+      const storeAlert = document.getElementById("storeAlert");
+
+      // Modal Elements
+      const editMenuModal = document.getElementById("editMenuModal");
+      const closeEditModal = document.getElementById("closeEditModal");
+      const cancelEditBtn = document.getElementById("cancelEditBtn");
+      const saveEditBtn = document.getElementById("saveEditBtn");
+      const editMenuForm = document.getElementById("editMenuForm");
+
+      // Navigation Elements
+      const navLinks = document.querySelectorAll(".nav-menu a");
+      const pages = document.querySelectorAll(".page");
+
+      // =================== FUNGSI UTILITAS ===================
+      function showAlert(element, message, type = "success") {
+        if (!element) return;
+
+        element.textContent = message;
+        element.className = `alert alert-${type}`;
+        element.style.display = "block";
+
+        setTimeout(() => {
+          element.style.display = "none";
+        }, 3000);
+      }
+
+      function showLoading(show) {
+        if (!loginBtn) return;
+
+        if (show) {
+          loginBtn.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Loading...';
+          loginBtn.disabled = true;
+        } else {
+          loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+          loginBtn.disabled = false;
+        }
+      }
+
+      function showProgressBar(element, progress, text) {
+        if (element) {
+          element.style.width = `${progress}%`;
+          element.textContent = text || `${Math.round(progress)}%`;
+        }
+      }
+
+      // =================== MOBILE MENU HANDLING ===================
+      function initMobileMenu() {
+        if (!mobileMenuBtn || !sidebar) return;
+
+        // Toggle sidebar
+        mobileMenuBtn.addEventListener("click", () => {
+          sidebar.classList.toggle("mobile-open");
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener("click", (e) => {
+          if (
+            window.innerWidth <= 1024 &&
+            !sidebar.contains(e.target) &&
+            e.target !== mobileMenuBtn &&
+            !e.target.closest(".mobile-menu-btn")
+          ) {
+            sidebar.classList.remove("mobile-open");
+          }
+        });
+
+        // Close sidebar when clicking a nav link on mobile
+        navLinks.forEach((link) => {
+          link.addEventListener("click", () => {
+            if (window.innerWidth <= 1024) {
+              sidebar.classList.remove("mobile-open");
+            }
+          });
+        });
+      }
+
+      // =================== FILE UPLOAD HANDLING ===================
+      function initFileUpload() {
+        // Add Menu File Upload
+        if (chooseFileBtn && menuImageFile) {
+          chooseFileBtn.addEventListener("click", () => {
+            menuImageFile.click();
+          });
+
+          menuImageFile.addEventListener("change", handleFileSelect);
+        }
+
+        // Edit Menu File Upload
+        if (editChooseFileBtn && editMenuImageFile) {
+          editChooseFileBtn.addEventListener("click", () => {
+            editMenuImageFile.click();
+          });
+
+          editMenuImageFile.addEventListener("change", handleEditFileSelect);
+        }
+      }
+
+      function handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (file) {
+          validateAndPreviewFile(file, fileName, previewImage, imagePreview);
+
+          // Clear URL input
+          menuImageUrl.value = "";
+        }
+      }
+
+      function handleEditFileSelect(e) {
+        const file = e.target.files[0];
+        if (file) {
+          validateAndPreviewFile(
+            file,
+            editFileName,
+            editPreviewImage,
+            editImagePreview,
+          );
+
+          // Clear URL input
+          editMenuImageUrl.value = "";
+        }
+      }
+
+      function validateAndPreviewFile(
+        file,
+        fileNameElement,
+        previewElement,
+        previewContainer,
+      ) {
+        // Validate file type
+        if (!file.type.match("image.*")) {
+          alert(
+            "Hanya file gambar yang diizinkan (JPEG, PNG, GIF, WebP, dll.)",
+          );
+          return;
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          alert("Ukuran file maksimal 5MB");
+          return;
+        }
+
+        // Update file name display
+        fileNameElement.textContent = file.name;
+
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previewElement.src = e.target.result;
+          previewContainer.style.display = "block";
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // =================== UPLOAD TO SUPABASE STORAGE ===================
+      async function uploadImageToStorage(file, progressCallback = null) {
+        try {
+          console.log("📤 Uploading image to Supabase Storage...");
+
+          // Generate unique filename
+          const fileExt = file.name.split(".").pop();
+          const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+          const filePath = `menu-images/${fileName}`;
+
+          // Upload file to Supabase Storage
+          const { data, error } = await supabaseAdmin.storage
+            .from("menu-images")
+            .upload(filePath, file, {
+              cacheControl: "3600",
+              upsert: false,
+            });
+
+          if (error) throw error;
+
+          console.log("✅ Image uploaded successfully:", data);
+
+          // Get public URL
+          const { data: urlData } = supabaseAdmin.storage
+            .from("menu-images")
+            .getPublicUrl(filePath);
+
+          return urlData.publicUrl;
+        } catch (error) {
+          console.error("❌ Error uploading image:", error);
+          throw error;
+        }
+      }
+
+      // =================== AUTHENTICATION ===================
+      async function checkAuth() {
+        try {
+          console.log("🔍 Checking authentication...");
+
+          const {
+            data: { user },
+            error,
+          } = await supabaseAdmin.auth.getUser();
+
+          if (error) {
+            console.error("❌ Auth check error:", error);
+            return;
+          }
+
+          if (user) {
+            console.log("✅ User is authenticated:", user.email);
+            currentUser = user;
+            userEmail.textContent = user.email;
+            showDashboard();
+            await loadDashboardData();
+          } else {
+            console.log("⚠️ No authenticated user found");
+            showLogin();
+          }
+        } catch (error) {
+          console.error("❌ Error in checkAuth:", error);
+          showLogin();
+        }
+      }
+
+      async function login(email, password) {
+        console.log("🔐 Attempting login with:", email);
+        showLoading(true);
+
+        try {
+          const { data, error } = await supabaseAdmin.auth.signInWithPassword({
+            email: email.trim(),
+            password: password,
+          });
+
+          if (error) {
+            console.error("❌ Login error:", error.message);
+            showAlert(loginAlert, "Login gagal: " + error.message, "error");
+            showLoading(false);
+            return false;
+          }
+
+          console.log("✅ Login successful:", data.user.email);
+          currentUser = data.user;
+          userEmail.textContent = data.user.email;
+          showDashboard();
+          await loadDashboardData();
+
+          return true;
+        } catch (error) {
+          console.error("❌ Login exception:", error);
+          showAlert(loginAlert, "Terjadi kesalahan saat login", "error");
+          showLoading(false);
+          return false;
+        }
+      }
+
+      async function logout() {
+        try {
+          await supabaseAdmin.auth.signOut();
+          currentUser = null;
+          showLogin();
+        } catch (error) {
+          console.error("❌ Logout error:", error);
+        }
+      }
+
+      function showLogin() {
+        if (loginPage) loginPage.style.display = "flex";
+        if (dashboardPage) dashboardPage.style.display = "none";
+
+        // Reset form
+        if (emailInput) emailInput.value = "";
+        if (passwordInput) passwordInput.value = "";
+        if (loginAlert) loginAlert.style.display = "none";
+      }
+
+      function showDashboard() {
+        if (loginPage) loginPage.style.display = "none";
+        if (dashboardPage) dashboardPage.style.display = "block";
+
+        // Hide mobile sidebar on load
+        if (sidebar) {
+          sidebar.classList.remove("mobile-open");
+        }
+      }
+
+      // =================== LOAD DATA ===================
+      async function loadDashboardData() {
+        try {
+          console.log("📋 Loading dashboard data...");
+
+          await loadStoreSettings();
+          await loadMenus();
+          updateStats();
+
+          console.log("✅ Dashboard data loaded successfully");
+        } catch (error) {
+          console.error("❌ Error loading dashboard data:", error);
+          showAlert(dashboardAlert, "Gagal memuat data dashboard", "error");
+        }
+      }
+
+      async function loadStoreSettings() {
+        try {
+          const { data, error } = await supabaseAdmin
+            .from("store_settings")
+            .select("*")
+            .single();
+
+          if (error) throw error;
+
+          storeSettings = data;
+          updateStoreUI();
+        } catch (error) {
+          console.error("❌ Error loading store settings:", error);
+          throw error;
+        }
+      }
+
+      async function loadMenus() {
+        try {
+          const { data, error } = await supabaseAdmin
+            .from("menus")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+          if (error) throw error;
+
+          menus = data || [];
+          renderMenusTable();
+        } catch (error) {
+          console.error("❌ Error loading menus:", error);
+          throw error;
+        }
+      }
+
+      // =================== RENDER FUNCTIONS ===================
+      function updateStoreUI() {
+        if (!storeSettings) return;
+
+        const isOpen = storeSettings.is_open;
+
+        // Update status indicator
+        currentStatus.textContent = isOpen ? "BUKA" : "TUTUP";
+        currentStatus.className = `status-indicator ${isOpen ? "status-open" : "status-closed"}`;
+
+        // Update toggle button
+        toggleStatusBtn.textContent = isOpen ? "Tutup Toko" : "Buka Toko";
+
+        // Update operation mode
+        operationMode.value = storeSettings.manual_override ? "manual" : "auto";
+
+        // Update time inputs
+        openTime.value = storeSettings.open_time
+          ? storeSettings.open_time.substring(0, 5)
+          : "08:00";
+        closeTime.value = storeSettings.close_time
+          ? storeSettings.close_time.substring(0, 5)
+          : "17:00";
+      }
+
+      function renderMenusTable() {
+        if (!menusTableBody) return;
+
+        if (!menus.length) {
+          menusTableBody.innerHTML = `
+              <tr>
+                  <td colspan="6" style="text-align: center; padding: 40px; color: #666;">
+                      <i class="fas fa-utensils" style="font-size: 2rem; margin-bottom: 10px;"></i><br>
+                      Belum ada menu. Tambah menu pertama!
+                  </td>
+              </tr>
+          `;
+          return;
+        }
+
+        menusTableBody.innerHTML = "";
+
+        menus.forEach((menu) => {
+          const row = document.createElement("tr");
+
+          // Determine stock badge
+          let stockBadge = "";
+          if (menu.stock === 0) {
+            stockBadge = '<span class="stock-badge stock-out">HABIS</span>';
+          } else if (menu.stock <= 10) {
+            stockBadge = `<span class="stock-badge stock-low">${menu.stock}</span>`;
+          } else {
+            stockBadge = `<span class="stock-badge stock-ok">${menu.stock}</span>`;
+          }
+
+          row.innerHTML = `
+              <td>
+                  <strong>${menu.name}</strong>
+                  ${!menu.is_active ? '<br><small style="color: #f44336;">(Nonaktif)</small>' : ""}
+              </td>
+              <td>${menu.category === "seblak" ? "Seblak" : "Gorengan"}</td>
+              <td>Rp ${menu.price.toLocaleString("id-ID")}</td>
+              <td>${stockBadge}</td>
+              <td>${menu.is_active ? "Aktif" : "Nonaktif"}</td>
+              <td>
+                  <div class="action-buttons">
+                      <button class="btn-edit" data-id="${menu.id}">
+                          <i class="fas fa-edit"></i> Edit
+                      </button>
+                      <button class="btn-delete" data-id="${menu.id}">
+                          <i class="fas fa-trash"></i> Hapus
+                      </button>
+                  </div>
+              </td>
+          `;
+
+          menusTableBody.appendChild(row);
+        });
+
+        // Add event listeners to edit/delete buttons
+        document.querySelectorAll(".btn-edit").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            const menuId = e.target.closest("button").dataset.id;
+            openEditModal(menuId);
+          });
+        });
+
+        document.querySelectorAll(".btn-delete").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            const menuId = e.target.closest("button").dataset.id;
+            deleteMenu(menuId);
+          });
+        });
+      }
+
+      function updateStats() {
+        const total = menus.length;
+        const active = menus.filter((m) => m.is_active).length;
+        const out = menus.filter((m) => m.stock === 0).length;
+
+        totalMenus.textContent = total;
+        activeMenus.textContent = active;
+        outOfStock.textContent = out;
+      }
+
+      // =================== CRUD OPERATIONS ===================
+      // Store Status Operations
+      async function toggleStoreStatus() {
+        if (!storeSettings) return;
+
+        const newStatus = !storeSettings.is_open;
+
+        try {
+          const { error } = await supabaseAdmin
+            .from("store_settings")
+            .update({
+              is_open: newStatus,
+              manual_override: true,
+            })
+            .eq("id", storeSettings.id);
+
+          if (error) throw error;
+
+          storeSettings.is_open = newStatus;
+          storeSettings.manual_override = true;
+          updateStoreUI();
+          showAlert(
+            dashboardAlert,
+            `Status toko berhasil diubah menjadi ${newStatus ? "BUKA" : "TUTUP"}`,
+            "success",
+          );
+        } catch (error) {
+          console.error("❌ Error toggling store status:", error);
+          showAlert(dashboardAlert, "Gagal mengubah status toko", "error");
+        }
+      }
+
+      async function saveStoreHours() {
+        if (!storeSettings) return;
+
+        const openTimeValue = openTime.value + ":00";
+        const closeTimeValue = closeTime.value + ":00";
+
+        try {
+          const { error } = await supabaseAdmin
+            .from("store_settings")
+            .update({
+              open_time: openTimeValue,
+              close_time: closeTimeValue,
+              manual_override: operationMode.value === "manual",
+            })
+            .eq("id", storeSettings.id);
+
+          if (error) throw error;
+
+          storeSettings.open_time = openTimeValue;
+          storeSettings.close_time = closeTimeValue;
+          storeSettings.manual_override = operationMode.value === "manual";
+
+          showAlert(
+            dashboardAlert,
+            "Jam operasional berhasil disimpan",
+            "success",
+          );
+        } catch (error) {
+          console.error("❌ Error saving store hours:", error);
+          showAlert(dashboardAlert, "Gagal menyimpan jam operasional", "error");
+        }
+      }
+
+      // Menu Operations
+      async function addMenu() {
+        if (!menuName.value || !menuPrice.value || !menuStock.value) {
+          showAlert(menusAlert, "Harap isi semua field yang wajib", "error");
+          return;
+        }
+
+        // Disable button during upload
+        const originalText = addMenuBtn.innerHTML;
+        addMenuBtn.innerHTML =
+          '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+        addMenuBtn.disabled = true;
+
+        try {
+          let imageUrl = null;
+
+          // Check if file is uploaded
+          if (menuImageFile.files[0]) {
+            // Show progress bar
+            uploadProgress.style.display = "block";
+            showProgressBar(progressBar, 10, "Mengunggah...");
+
+            // Upload image to Supabase Storage
+            imageUrl = await uploadImageToStorage(menuImageFile.files[0]);
+
+            showProgressBar(progressBar, 100, "Selesai!");
+            setTimeout(() => {
+              uploadProgress.style.display = "none";
+              showProgressBar(progressBar, 0, "0%");
+            }, 1000);
+          }
+          // Check if URL is provided
+          else if (menuImageUrl.value) {
+            imageUrl = menuImageUrl.value;
+          }
+
+          const newMenu = {
+            name: menuName.value,
+            category: menuCategory.value,
+            price: parseInt(menuPrice.value),
+            stock: parseInt(menuStock.value),
+            image_url: imageUrl,
+            is_active: true,
+          };
+
+          console.log("📝 Adding menu:", newMenu);
+
+          const { error } = await supabaseAdmin.from("menus").insert([newMenu]);
+
+          if (error) throw error;
+
+          showAlert(menusAlert, "Menu berhasil ditambahkan", "success");
+
+          // Reset form
+          menuName.value = "";
+          menuPrice.value = "";
+          menuStock.value = "";
+          menuImageFile.value = "";
+          menuImageUrl.value = "";
+          fileName.textContent = "Belum ada file dipilih";
+          imagePreview.style.display = "none";
+
+          // Reload menus
+          await loadMenus();
+          updateStats();
+        } catch (error) {
+          console.error("❌ Error adding menu:", error);
+          showAlert(
+            menusAlert,
+            "Gagal menambah menu: " + error.message,
+            "error",
+          );
+        } finally {
+          // Re-enable button
+          addMenuBtn.innerHTML = '<i class="fas fa-plus"></i> Tambah Menu';
+          addMenuBtn.disabled = false;
+        }
+      }
+
+      function openEditModal(menuId) {
+        const menu = menus.find((m) => m.id == menuId);
+        if (!menu) return;
+
+        currentEditingMenu = menu;
+
+        // Fill form
+        document.getElementById("editMenuId").value = menu.id;
+        document.getElementById("editMenuName").value = menu.name;
+        document.getElementById("editMenuCategory").value = menu.category;
+        document.getElementById("editMenuPrice").value = menu.price;
+        document.getElementById("editMenuStock").value = menu.stock;
+        document.getElementById("editMenuImageUrl").value =
+          menu.image_url || "";
+        document.getElementById("editMenuStatus").value = menu.is_active;
+
+        // Show current image if exists
+        if (menu.image_url) {
+          currentImage.src = menu.image_url;
+          currentImagePreview.style.display = "block";
+        } else {
+          currentImagePreview.style.display = "none";
+        }
+
+        // Reset file inputs
+        editMenuImageFile.value = "";
+        editFileName.textContent = "Pilih file untuk mengganti gambar";
+        editImagePreview.style.display = "none";
+
+        // Show modal
+        editMenuModal.classList.add("show");
+
+        // Close mobile sidebar if open
+        if (sidebar) {
+          sidebar.classList.remove("mobile-open");
+        }
+      }
+
+      function closeEditModalFunc() {
+        editMenuModal.classList.remove("show");
+        currentEditingMenu = null;
+        editMenuForm.reset();
+
+        // Reset previews
+        currentImagePreview.style.display = "none";
+        editImagePreview.style.display = "none";
+        editFileName.textContent = "Pilih file untuk mengganti gambar";
+      }
+
+      async function saveEditMenu() {
+        if (!currentEditingMenu) return;
+
+        // Disable button during upload
+        const originalText = saveEditBtn.innerHTML;
+        saveEditBtn.innerHTML =
+          '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+        saveEditBtn.disabled = true;
+
+        try {
+          let imageUrl = editMenuImageUrl.value || null;
+
+          // Check if new file is uploaded
+          if (editMenuImageFile.files[0]) {
+            // Show progress bar
+            editUploadProgress.style.display = "block";
+            showProgressBar(editProgressBar, 10, "Mengunggah...");
+
+            imageUrl = await uploadImageToStorage(editMenuImageFile.files[0]);
+
+            showProgressBar(editProgressBar, 100, "Selesai!");
+            setTimeout(() => {
+              editUploadProgress.style.display = "none";
+              showProgressBar(editProgressBar, 0, "0%");
+            }, 1000);
+          }
+
+          const updatedMenu = {
+            name: document.getElementById("editMenuName").value,
+            category: document.getElementById("editMenuCategory").value,
+            price: parseInt(document.getElementById("editMenuPrice").value),
+            stock: parseInt(document.getElementById("editMenuStock").value),
+            image_url: imageUrl,
+            is_active:
+              document.getElementById("editMenuStatus").value === "true",
+          };
+
+          const { error } = await supabaseAdmin
+            .from("menus")
+            .update(updatedMenu)
+            .eq("id", currentEditingMenu.id);
+
+          if (error) throw error;
+
+          showAlert(menusAlert, "Menu berhasil diperbarui", "success");
+          closeEditModalFunc();
+          await loadMenus();
+          updateStats();
+        } catch (error) {
+          console.error("❌ Error updating menu:", error);
+          showAlert(menusAlert, "Gagal mengedit menu", "error");
+        } finally {
+          // Re-enable button
+          saveEditBtn.innerHTML = "Simpan Perubahan";
+          saveEditBtn.disabled = false;
+        }
+      }
+
+      async function deleteMenu(menuId) {
+        if (!confirm("Apakah yakin ingin menghapus menu ini?")) return;
+
+        // Soft delete dengan set is_active ke false
+        try {
+          const { error } = await supabaseAdmin
+            .from("menus")
+            .update({ is_active: false })
+            .eq("id", menuId);
+
+          if (error) throw error;
+
+          showAlert(menusAlert, "Menu berhasil dihapus", "success");
+          await loadMenus();
+          updateStats();
+        } catch (error) {
+          console.error("❌ Error deleting menu:", error);
+          showAlert(menusAlert, "Gagal menghapus menu", "error");
+        }
+      }
+
+      // =================== EVENT LISTENERS ===================
+      // Login form
+      if (loginForm) {
+        loginForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const email = emailInput.value.trim();
+          const password = passwordInput.value;
+
+          if (!email || !password) {
+            showAlert(loginAlert, "Harap isi email dan password", "error");
+            return;
+          }
+
+          await login(email, password);
+        });
+      }
+
+      // Logout
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", logout);
+      }
+
+      // Store Status
+      if (toggleStatusBtn) {
+        toggleStatusBtn.addEventListener("click", toggleStoreStatus);
+      }
+
+      if (saveHoursBtn) {
+        saveHoursBtn.addEventListener("click", saveStoreHours);
+      }
+
+      // Menu Management
+      if (addMenuBtn) {
+        addMenuBtn.addEventListener("click", addMenu);
+      }
+
+      // Modal
+      if (closeEditModal) {
+        closeEditModal.addEventListener("click", closeEditModalFunc);
+      }
+
+      if (cancelEditBtn) {
+        cancelEditBtn.addEventListener("click", closeEditModalFunc);
+      }
+
+      if (saveEditBtn) {
+        saveEditBtn.addEventListener("click", saveEditMenu);
+      }
+
+      // Navigation
+      navLinks.forEach((link) => {
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+
+          const page = link.dataset.page;
+
+          // Update active nav
+          navLinks.forEach((l) => l.classList.remove("active"));
+          link.classList.add("active");
+
+          // Show selected page
+          pages.forEach((p) => (p.style.display = "none"));
+          const pageElement = document.getElementById(
+            `page${page.charAt(0).toUpperCase() + page.slice(1)}`,
+          );
+          if (pageElement) {
+            pageElement.style.display = "block";
+          }
+        });
+      });
+
+      // =================== INITIALIZATION ===================
+      document.addEventListener("DOMContentLoaded", () => {
+        console.log("🚀 Admin Dashboard Initializing...");
+        initMobileMenu();
+        initFileUpload();
+        checkAuth();
+      });
+    </script>
+  </body>
+</html>
